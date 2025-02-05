@@ -3,7 +3,7 @@ const { StatusCodes } = require('http-status-codes');
 const { ErrorResponse }  = require("../utils/commons");
 const AppError = require('../utils/errors/app-error');
 // Middleware to validate request
-function validateRequest  (req, res, next){
+function AirplaneMiddleware  (req, res, next){
 
   const errors = validationResult(req);
 
@@ -25,4 +25,4 @@ function validateRequest  (req, res, next){
   next();
 };
 
-module.exports = validateRequest;
+module.exports = AirplaneMiddleware;

@@ -10,9 +10,9 @@ async function createAirplane(data) {
         return airplane;
     } catch (error) {
         console.warn(error.message)
-        if(error.name === "SequelizeValidationError"){
+        if(error.name === "SequelizeValidationError" || error.name === "SequelizeUniqueConstraintError"){
             let explanation = [];
-            error.erros.forEach(err=>{
+            error.errors.forEach(err=>{
                 explanation.push(err.message);
             });
             throw new AppError(explanation, StatusCodes.BAD_REQUEST)
@@ -44,19 +44,6 @@ async function getAirplane(id) {
     }
 }
 
-async function getAirplane(id) {
-    try {
-        const airplane = await airplaneRepository.get(id);
-        return airplane;
-    } catch (error) {
-        console.warn(error.message);
-        if(error.statusCode === StatusCodes.NOT_FOUND){
-            throw new AppError(error.message, error.statusCode)
-        }
-        throw new AppError("Cannot fetch data of the airplane", StatusCodes.INTERNAL_SERVER_ERROR)
-    }
-}
-
 async function destroyAirplane(id) {
     try {
         const airplane = await airplaneRepository.destroy(id);
@@ -76,7 +63,7 @@ async function updateAirplane(id,data) {
         return airplane;
     } catch (error) {
         console.warn(error.message);
-        if(error.statusCode === StatusCodes.NOT_FOUND){
+        if(error.statusCode === StatusCodes.NOT_FOUND  || error.name === "SequelizeUniqueConstraintError"){
             throw new AppError(error.message, error.statusCode)
         }
         throw new AppError("Cannot fetch data of the airplane", StatusCodes.INTERNAL_SERVER_ERROR)
