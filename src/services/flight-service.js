@@ -34,7 +34,7 @@ async function createFlight(data) {
 async function getFlights(query) {
     try {
         let customFilter = {};
-        const endingDayTime = " 23:59:59"
+        let sortFilter = [];
         if(query.trips){
             if(!(/^[A-Z]{3}-[A-Z]{3}$/.test(query.trips))){
                 const error = new Error("trips must be in format XXX-XXX (e.g., MUM-BLR)");
@@ -68,8 +68,8 @@ async function getFlights(query) {
             }
         }
         if(query.tripDate){
-            const tripDateStart = new Date(`${query.tripDate}T00:00:00Z`); // Start of day
-            const tripDateEnd = new Date(`${query.tripDate}T23:59:59Z`);   // End of day
+            const tripDateStart = new Date(`${query.tripDate}T00:00:00+05:30`); // Start of day
+            const tripDateEnd = new Date(`${query.tripDate}T23:59:59+05:30`);   // End of day
             
             customFilter.departureTime = {
                 [Op.gte]: tripDateStart, 
@@ -77,11 +77,15 @@ async function getFlights(query) {
             };
             
         }
-        const flights = await flightRepository.getAllFlights(customFilter);
+        if(query.sort){
+            const params = query.sort.split(",");
+            const sortFilters = params.map(param => param.split("_"));
+            sortFilter = sortFilters;
+        }
+        const flights = await flightRepository.getAllFlights(customFilter,sortFilter);
         return flights;
     } catch (error) {
         console.warn(error.message);
-        console.warn(error.message, error.name)
         if(error.name === "SequelizeValidationError" || error.name === "SequelizeUniqueConstraintError"){
             let explanation = [];
             error.errors.forEach(err=>{
