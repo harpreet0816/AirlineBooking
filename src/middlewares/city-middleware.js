@@ -6,7 +6,7 @@ const AppError = require("../utils/errors/app-error");
 const CityMiddleware = (req, res, next) => {
   const errors = validationResult(req);
 
-  if (!errors.isEmpty) {
+  if (!errors.isEmpty()) {
     const errorMessages = errors.array().map((err) => err.msg);
 
     ErrorResponse.error = new AppError(errorMessages, StatusCodes.BAD_REQUEST);

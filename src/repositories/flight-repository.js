@@ -1,7 +1,8 @@
 const { Sequelize } = require("sequelize")
 const CrudRepository = require("./crud-repository");
 const { Flight, Airplane, Airport, City } = require("../models");
-
+const db = require("../models");
+const { addRowLockOnFlights } = require("./queries");
 class FlightRepository extends CrudRepository {
   constructor(parameters) {
     super(Flight);
@@ -48,6 +49,26 @@ class FlightRepository extends CrudRepository {
     });
 
     return response;
+  }
+
+  async updateRemainingSeats (flightId, seats, dec = true){
+    // Need to implement a row lock here so that if multiple requests come to update the same row, we restrict them from updating it. This is a pessimistic lock.
+    await db.sequelize.query(addRowLockOnFlights(flightId));
+
+    const flightToUpdate = await Flight.findByPk(flightId);
+    if(dec){
+      // const flightToUpdate = await super.get(flightId);
+
+      //common issue with .decrement() method because it only updates the database but does not refresh the instance in memory.
+      await flightToUpdate.decrement("totalSeats", {by: seats});
+
+      const response = await flightToUpdate.reload(); 
+      return response;
+
+    }else{
+      const response = await flightToUpdate.increment("totalSeats", {by: seats});
+      return response;
+    }
   }
 }
 

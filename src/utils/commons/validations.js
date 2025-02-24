@@ -1,4 +1,4 @@
-const { body, query } = require("express-validator");
+const { body, query, param } = require("express-validator");
 
 class ValidationChecks {
   // 🚀 Airplane Validations
@@ -122,6 +122,23 @@ class ValidationChecks {
           "Price must be a valid number with up to 2 decimal placesa"
         ),
     ];
+  }
+
+  static validateUpdateSeatsFlight() {
+    return [
+      param("id")
+      .isNumeric()
+      .withMessage("flightId must be a valid numeric value"),
+
+      body("seats")
+      .isInt({ min: 1 })
+      .withMessage("seats must be a valid numeric value with min value 1"),
+
+      body("dec")
+      .isBoolean()
+      .withMessage("Must be a boolean value")
+      .optional(),
+    ]
   }
 }
 

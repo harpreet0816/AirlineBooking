@@ -10,4 +10,9 @@ router.post("/",ValidationChecks.validateCreateFlight(),
 
 router.get("/",ValidationChecks.validateSearchFlight(), FlightMiddleware, FlightController.getFlights);
 
+router.get("/:id", FlightController.getFlight);
+
+router.patch("/:id/seats", ValidationChecks.validateUpdateSeatsFlight(), FlightMiddleware,  FlightController.updateSeats);
+
+
 module.exports = router
