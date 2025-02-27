@@ -116,11 +116,11 @@ class ValidationChecks {
         .matches(/^[A-Z]{3}-[A-Z]{3}$/)
         .withMessage("trips must be in format XXX-XXX (e.g., MUM-BLR)"),
 
-      query("price")
-        .matches(/^\d{1,7}(\.\d{1,2})?$/)
-        .withMessage(
-          "Price must be a valid number with up to 2 decimal placesa"
-        ),
+      // query("price")
+      //   .matches(/^\d{1,7}(\.\d{1,2})?$/)
+      //   .withMessage(
+      //     "Price must be a valid number with up to 2 decimal placesa"
+      //   ),
     ];
   }
 
