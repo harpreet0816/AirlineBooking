@@ -2,6 +2,7 @@ const { StatusCodes }  = require("http-status-codes");
 const { Booking } = require("../models");
 const CrudRepository = require("./crud-repository");
 const AppError = require("../utils/errors/app-error");
+const { Op } = require("sequelize");
 
 class BookingRepository extends CrudRepository {
     constructor() {
@@ -30,6 +31,17 @@ class BookingRepository extends CrudRepository {
         if(!response[0]){
           throw new AppError("The field you requested is not present", StatusCodes.NOT_FOUND)
         }
+        return response;
+      }
+
+      async cancelOldBookings(timestamp){
+        const response = await Booking.find({
+          where: {
+            createdAt: {
+              [Op.lt]: timestamp
+            }
+          }
+        });
         return response;
       }
 }

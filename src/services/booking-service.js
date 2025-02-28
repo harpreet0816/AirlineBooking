@@ -5,7 +5,7 @@ const { StatusCodes } = require("http-status-codes");
 const AppError = require("../utils/errors/app-error");
 const { FLIGHT_SERVICE } = require("../config/server-config");
 const { Enums } = require("../utils/commons");
-const { BOOKED } = Enums.BOOKING_STATUS;
+const { BOOKED, CANCELLED } = Enums.BOOKING_STATUS;
 const bookingRepository = new BookingRepository();
 
 async function createBooking(data) {
@@ -35,7 +35,7 @@ async function createBooking(data) {
 
     const { flightId, userId, noOfSeats } = data;
     const flightResponse = await axios.get(
-      `${FLIGHT_SERVICE}/api/v1/flight/${data.flightId}`
+      `${FLIGHT_SERVICE}/api/v1/flight/${flightId}`
     );
     const flight = flightResponse.data.data;
     if (data.noOfSeats > flight.totalSeats) {
@@ -45,7 +45,7 @@ async function createBooking(data) {
     }
 
     const totalBillingAmount = noOfSeats * flight.price;
-    console.log(totalBillingAmount);
+
     const bookingPayload = { ...data, totalCost: totalBillingAmount };
     const booking = await bookingRepository.createBooking(
       bookingPayload,
@@ -86,10 +86,34 @@ async function makePayment(data) {
   const transaction = await db.sequelize.transaction();
   try {
     const { bookingId, userId, totalCost } = data;
+
     const bookingDetails = await bookingRepository.getUsingT(
       bookingId,
       transaction
     );
+
+    if(bookingDetails.status === CANCELLED){
+      const error = new Error("The booking has been cancelled");
+      error.name = "CustomError";
+      throw error;
+    }
+
+    const createdBookingTime = new Date(bookingDetails.createdAt);
+    const currentTime = new Date();
+    const timeDifferenceInMilliseconds = Math.floor(
+      currentTime - createdBookingTime
+    );
+    const requiredTimeInMilliseconds = 1000 * 60 * 30; //30 mins in miliseconds;
+    const isWithinAllowedTime =
+      timeDifferenceInMilliseconds < requiredTimeInMilliseconds;
+
+    if (!isWithinAllowedTime) {
+      await cancelBooking(bookingId);
+
+      const error = new Error("The booking has expired");
+      error.name = "CustomError";
+      throw error;
+    }
 
     if (bookingDetails.totalCost !== totalCost) {
       const error = new Error("The ammount of the payment don't match");
@@ -105,20 +129,24 @@ async function makePayment(data) {
       throw error;
     }
 
-    const updateBooking = await bookingRepository.updateUsingT(bookingId, {
-      status: BOOKED,
-    }, transaction);
+     await bookingRepository.updateUsingT(
+      bookingId,
+      {
+        status: BOOKED,
+      },
+      transaction
+    );
 
     const updatedBookingDetails = await bookingRepository.getUsingT(
-        bookingId,
-        transaction
-      );
+      bookingId,
+      transaction
+    );
     await transaction.commit();
 
     return updatedBookingDetails;
-
   } catch (error) {
-    transaction.rollback();
+    await transaction.rollback();
+
     console.error("makepayment failed:", error.message);
 
     if (
@@ -132,13 +160,61 @@ async function makePayment(data) {
     }
 
     throw new AppError(
-      "Cannot create Booking",
+      "Cannot make Payment",
       StatusCodes.INTERNAL_SERVER_ERROR
     );
+  }
+}
+
+cancelBooking = async (bookingId) => {
+  const transaction = await db.sequelize.transaction();
+  try {
+    const bookingDetails = await bookingRepository.getUsingT(
+      bookingId,
+      transaction
+    );
+
+    if (bookingDetails.status === CANCELLED) {
+      await transaction.commit();
+      return true;
+    }
+
+    await axios.patch(`${FLIGHT_SERVICE}/api/v1/flight/${bookingDetails.flightId}/seats`, {
+      seats: bookingDetails.noOfSeats,
+      dec: false,
+    });
+
+    await bookingRepository.updateUsingT(
+      bookingId,
+      {
+        status: CANCELLED,
+      },
+      transaction
+    );
+
+    await transaction.commit();
+
+    return true;
+  } catch (error) {
+    await transaction.rollback();
+    throw error;
+  }
+};
+
+async function cancelOldBookings () {
+  try {
+    console.log("adjustedTime")
+    const adjustedTime  = new Data( Date.now() - 1000 * 60 * 10); // time 10 mins ago
+    const bookings = await bookingRepository.cancelOldBookings(adjustedTime);
+
+    return bookings;
+  } catch (error) {
+    console.log("cancel old booking ", error.message)
   }
 }
 
 module.exports = {
   createBooking,
   makePayment,
+  cancelOldBookings,
 };
