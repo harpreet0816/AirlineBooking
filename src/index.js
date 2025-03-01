@@ -2,7 +2,7 @@ const express = require("express");
 
 const { ServerConfig } = require("./config");
 const apiRoutes = require("./routes");
-const { Crons } = require("./utils/commons")
+const Crons = require("./utils/commons/cron-jobs")
 const app = express();
 
 

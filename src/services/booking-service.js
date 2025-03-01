@@ -5,6 +5,7 @@ const { StatusCodes } = require("http-status-codes");
 const AppError = require("../utils/errors/app-error");
 const { FLIGHT_SERVICE } = require("../config/server-config");
 const { Enums } = require("../utils/commons");
+const { getFormattedTime } = require("../utils/helpers/datetime-helper");
 const { BOOKED, CANCELLED } = Enums.BOOKING_STATUS;
 const bookingRepository = new BookingRepository();
 
@@ -166,7 +167,7 @@ async function makePayment(data) {
   }
 }
 
-cancelBooking = async (bookingId) => {
+async function cancelBooking (bookingId) {
   const transaction = await db.sequelize.transaction();
   try {
     const bookingDetails = await bookingRepository.getUsingT(
@@ -204,9 +205,17 @@ cancelBooking = async (bookingId) => {
 async function cancelOldBookings () {
   try {
     console.log("adjustedTime")
-    const adjustedTime  = new Data( Date.now() - 1000 * 60 * 10); // time 10 mins ago
+    const adjustedTime  = new Date( Date.now() - 1000 * 60 * 10); // time 10 mins ago
     const bookings = await bookingRepository.cancelOldBookings(adjustedTime);
-
+    if (bookings.length > 0) {
+      console.log(
+        bookings[bookings.length - 1].createdAt,
+        "----",
+        getFormattedTime(bookings[bookings.length - 1].createdAt)
+      );
+    } else {
+      console.log("No old bookings found.");
+    }
     return bookings;
   } catch (error) {
     console.log("cancel old booking ", error.message)
@@ -216,5 +225,6 @@ async function cancelOldBookings () {
 module.exports = {
   createBooking,
   makePayment,
-  cancelOldBookings,
+  cancelBooking,
+  cancelOldBookings
 };

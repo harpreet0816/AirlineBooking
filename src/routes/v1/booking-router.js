@@ -5,6 +5,8 @@ const { BookingController } = require("../../controllers");
 
 const router = express.Router();
 
+router.get("/", BookingController.test); 
+
 router.post("/", BookingController.createBooking);
 
 router.post("/payments", BookingController.makePayment);

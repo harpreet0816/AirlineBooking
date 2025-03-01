@@ -1,10 +1,11 @@
 const cron = require("node-cron");
 const { BookingService } = require("../../services");
- 
+
+
 function scheduleCrons() {
-    cron.schedule('*/5 */10 * * * *', async () => {
-        // const res = await BookingService.cancelOldBookings();
-        console.log("running a task every 10 minute");
+    cron.schedule('0 0 */30 * * *', async () => {
+        await BookingService.cancelOldBookings();
+        console.log("Cron job executed");
     })
 }
 
